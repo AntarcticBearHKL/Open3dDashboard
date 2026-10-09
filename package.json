@@ -1,0 +1,17 @@
+{
+  "name": "asset-browser",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Local-first, browser-only 3D asset library browser with cart and local Blender handoff",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "bridge": "python start.py --no-frontend"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "^8.3.2"
+  }
+}

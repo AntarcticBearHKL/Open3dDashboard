@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="description"
+      content="Local-first, backend-free 3D asset library browser: browse 2017 assets, filter and search, preview textured FBX, and export the cart as a text list of asset codes."
+    />
+    <title>3D Asset Browser</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23111111'/%3E%3Cpath d='M12 4.6 18.8 8.5v7.8L12 20.2 5.2 16.3V8.5z' fill='none' stroke='%23e4e4e4' stroke-width='1.5'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div class="app" id="app" hidden>
+      <header class="topbar">
+        <div class="topbar__brand">
+          <span class="brand__mark" id="brand-mark"></span>
+          <div class="brand__text">
+            <span class="brand__name">3D Asset Browser</span>
+            <span class="brand__sub" id="source-chip" title="Data source">Not loaded</span>
+          </div>
+        </div>
+        <div class="topbar__actions">
+          <button
+            class="btn topbar__blender"
+            id="blender-open"
+            aria-haspopup="dialog"
+            aria-controls="blender"
+          >
+            <span data-icon="blender" data-size="16"></span>
+            <span class="btn__label">Blender</span>
+            <span class="statusdot" id="blender-top-dot" data-state="checking" aria-hidden="true"></span>
+          </button>
+          <button
+            class="btn topbar__unity"
+            id="unity-open"
+            aria-haspopup="dialog"
+            aria-controls="unity"
+          >
+            <span data-icon="unity" data-size="16"></span>
+            <span class="btn__label">Unity</span>
+            <span class="statusdot" id="unity-top-dot" data-state="checking" aria-hidden="true"></span>
+          </button>
+          <button
+            class="btn topbar__cart"
+            id="cart-open"
+            aria-haspopup="dialog"
+            aria-controls="cart"
+            aria-expanded="false"
+            aria-label="Cart"
+            title="Cart"
+          >
+            <span data-icon="cart" data-size="16"></span>
+            <span class="btn__label">Cart</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="Search and filters">
+        <div class="toolbar__row">
+          <span class="eyebrow toolbar__label">Library</span>
+          <div class="field field--search">
+            <span class="field__icon" data-icon="search" data-size="15" aria-hidden="true"></span>
+            <input
+              id="q"
+              type="search"
+              placeholder="Search code / slug / name / tag"
+              autocomplete="off"
+              spellcheck="false"
+              disabled
+              aria-label="Search assets"
+            />
+            <button class="btn btn--icon field__clear" id="q-clear" hidden aria-label="Clear search">
+              <span data-icon="x" data-size="13"></span>
+            </button>
+          </div>
+          <div class="toolbar__picks">
+            <label class="pick">
+              <span class="sr-only">Top-level category</span>
+              <select id="l1" disabled aria-label="Top-level category">
+                <option value="">All categories</option>
+              </select>
+            </label>
+            <label class="pick">
+              <span class="sr-only">Subcategory</span>
+              <select id="l2" disabled aria-label="Subcategory">
+                <option value="">All subcategories</option>
+              </select>
+            </label>
+            <label class="pick">
+              <span class="sr-only">Sort order</span>
+              <select id="sort" disabled aria-label="Sort order">
+                <option value="code">By code</option>
+                <option value="slug">By name</option>
+                <option value="tri_asc">Triangles: low → high</option>
+                <option value="tri_desc">Triangles: high → low</option>
+              </select>
+            </label>
+            <label class="pick">
+              <span class="sr-only">Style</span>
+              <select id="style" disabled aria-label="Style">
+                <option value="">All styles</option>
+                <option value="lowpoly">Low poly</option>
+                <option value="stylized">Stylized</option>
+                <option value="semi-realistic">Semi-realistic</option>
+                <option value="realistic">Realistic</option>
+                <option value="photoreal">Photoreal</option>
+              </select>
+            </label>
+            <button class="btn btn--ghost btn--sm" id="refresh-all" title="Reload the library manifest and previews">
+              <span data-icon="reset" data-size="14"></span><span>Refresh</span>
+            </button>
+          </div>
+          <span class="toolbar__count mono" id="count" aria-live="polite">—</span>
+        </div>
+        <div class="toolbar__row toolbar__row--sub" id="filters-row">
+          <div class="cluster" id="active-filters"></div>
+        </div>
+      </section>
+
+      <main class="grid-scroll" id="grid-scroll">
+        <div class="grid" id="grid" role="list"></div>
+        <div class="sentinel" id="grid-sentinel" aria-hidden="true"></div>
+        <div class="empty" id="empty" hidden></div>
+      </main>
+    </div>
+
+    <div class="welcome" id="welcome">
+      <div class="welcome__card">
+        <span class="welcome__mark" id="welcome-mark"></span>
+        <p class="eyebrow">Local-first · Offline</p>
+        <h1 class="welcome__title">3D Asset Browser</h1>
+        <p class="welcome__lead">
+          Local-first, no backend. Pick the <strong>3D Resource</strong> library folder to browse 2017 assets,
+          preview textured FBX, and export the cart as a text list of asset codes.
+        </p>
+        <div class="welcome__actions">
+          <button class="btn btn--primary btn--lg" id="pick-dir">
+            <span data-icon="folder" data-size="16"></span><span>Choose library folder</span><span class="btn__arrow" aria-hidden="true">→</span>
+          </button>
+          <button class="btn btn--ghost btn--lg" id="http-hint">
+            <span data-icon="info" data-size="16"></span><span>How to use HTTP mode</span>
+          </button>
+        </div>
+        <p class="welcome__hint" id="welcome-hint" role="status"></p>
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim" hidden></div>
+
+    <aside class="drawer" id="cart" role="dialog" aria-modal="true" aria-label="Cart" aria-hidden="true">
+      <header class="drawer__head">
+        <div class="drawer__heading">
+          <span class="eyebrow">Selection</span>
+          <h2 class="drawer__title">Cart</h2>
+        </div>
+        <span class="plate plate--count plate--sm" data-cart-count aria-hidden="true">0</span>
+        <button class="btn btn--icon" id="cart-close" aria-label="Close cart">
+          <span data-icon="x" data-size="15"></span>
+        </button>
+      </header>
+      <div class="drawer__body">
+        <div class="cart-list" id="cart-list" hidden></div>
+      </div>
+      <footer class="drawer__foot" id="cart-foot">
+        <button class="btn btn--ok" id="cart-export" disabled>
+          <span data-icon="download" data-size="15"></span><span>Export codes</span><span class="btn__arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="btn btn--danger" id="cart-clear" disabled>
+          <span data-icon="trash" data-size="15"></span><span>Clear</span>
+        </button>
+      </footer>
+    </aside>
+
+    <dialog class="dialog detail" id="detail" aria-labelledby="detail-title">
+      <div class="detail__shell">
+        <section class="previewpane" aria-label="Preview image">
+          <img class="previewpane__img" id="detail-preview" alt="" />
+          <div class="previewpane__ph" id="detail-preview-ph" hidden>
+            <span data-icon="imageOff" data-size="30"></span><span>No preview</span>
+          </div>
+          <span class="previewpane__badge plate" id="detail-preview-badge">—</span>
+        </section>
+        <aside class="spec-pane" id="detail-spec" aria-label="Asset details">
+          <header class="spec-pane__head">
+            <span class="eyebrow">Asset details</span>
+            <div class="spec-pane__id">
+              <span class="plate" id="detail-code">—</span>
+              <button class="btn btn--icon" id="detail-refresh" aria-label="Refresh this asset" title="Refresh preview and details">
+                <span data-icon="reset" data-size="14"></span>
+              </button>
+              <button class="btn btn--icon" data-close aria-label="Close details">
+                <span data-icon="x" data-size="15"></span>
+              </button>
+            </div>
+            <h2 class="spec-pane__title mono" id="detail-title">—</h2>
+            <p class="spec-pane__cat" id="detail-cat"></p>
+          </header>
+          <div class="spec-pane__body" id="detail-body"></div>
+          <footer class="spec-pane__foot">
+            <button class="btn btn--blender btn--xl" id="detail-blender">
+              <span data-icon="blender" data-size="20"></span><span>Open in Blender</span>
+            </button>
+            <button class="btn btn--unity btn--xl" id="detail-unity">
+              <span data-icon="unity" data-size="20"></span><span>Place in Unity</span>
+            </button>
+            <button class="btn btn--ghost btn--xl" id="detail-cart"></button>
+          </footer>
+        </aside>
+      </div>
+    </dialog>
+
+    <dialog class="dialog blender" id="blender" aria-labelledby="blender-title">
+      <header class="dialog__head">
+        <h2 class="dialog__title" id="blender-title">Send to Blender</h2>
+        <button class="btn btn--icon" data-close aria-label="Close">
+          <span data-icon="x" data-size="15"></span>
+        </button>
+      </header>
+      <p class="eyebrow dialog__eyebrow">Local bridge</p>
+      <div class="blender__status">
+        <span class="statusdot" id="blender-dot" data-state="checking" aria-hidden="true"></span>
+        <span id="blender-status">Checking…</span>
+      </div>
+      <label class="blender__field">
+        <span>Library root path</span>
+        <input id="blender-root" class="mono" spellcheck="false" autocomplete="off" />
+      </label>
+      <label class="blender__field">
+        <span>Local bridge URL</span>
+        <input id="blender-base" class="mono" spellcheck="false" autocomplete="off" />
+      </label>
+      <p class="blender__note">
+        Run <code>python bridge/blender_bridge.py</code> on this machine first (or <code>npm run bridge</code>).
+        “Import” sends assets to the <strong>open</strong> Blender; “Open in new window” launches a new Blender.
+        The bridge listens on 127.0.0.1 only and accepts cross-origin requests from this page only.
+      </p>
+      <footer class="dialog__foot">
+        <button class="btn btn--ghost btn--sm" id="blender-recheck">
+          <span data-icon="reset" data-size="14"></span><span>Recheck</span>
+        </button>
+        <button class="btn btn--ghost" id="blender-open-cart" disabled>
+          <span data-icon="cube" data-size="15"></span><span>Open cart in new window</span>
+        </button>
+        <button class="btn btn--primary" id="blender-import-cart" disabled>
+          <span data-icon="cube" data-size="15"></span><span>Import cart to Blender</span><span class="btn__arrow" aria-hidden="true">→</span>
+        </button>
+      </footer>
+    </dialog>
+
+    <dialog class="dialog unity" id="unity" aria-labelledby="unity-title">
+      <header class="dialog__head">
+        <h2 class="dialog__title" id="unity-title">Send to Unity</h2>
+        <button class="btn btn--icon" data-close aria-label="Close">
+          <span data-icon="x" data-size="15"></span>
+        </button>
+      </header>
+      <p class="eyebrow dialog__eyebrow">Local bridge</p>
+      <div class="unity__status">
+        <span class="statusdot" id="unity-dot" data-state="checking" aria-hidden="true"></span>
+        <span id="unity-status">Checking…</span>
+      </div>
+      <label class="unity__field">
+        <span>Local bridge URL</span>
+        <input id="unity-base" class="mono" spellcheck="false" autocomplete="off" />
+      </label>
+      <p class="unity__note">
+        Run <code>python bridge/unity_bridge.py</code> on this machine first and keep the Unity editor open
+        (MCP ready). “Place” puts an asset into the <strong>open</strong> Unity scene by slug; “Sync library”
+        makes Unity re-read the library manifest; “Export scene” writes the current scene back to the library.
+        The bridge listens on 127.0.0.1 only and accepts cross-origin requests from this page only.
+      </p>
+      <footer class="dialog__foot">
+        <button class="btn btn--ghost btn--sm" id="unity-recheck">
+          <span data-icon="reset" data-size="14"></span><span>Recheck</span>
+        </button>
+        <button class="btn btn--ghost" id="unity-sync">
+          <span data-icon="reset" data-size="15"></span><span>Sync library</span>
+        </button>
+        <button class="btn btn--ghost" id="unity-export">
+          <span data-icon="download" data-size="15"></span><span>Export scene</span>
+        </button>
+        <button class="btn btn--primary" id="unity-place-cart" disabled>
+          <span data-icon="cube" data-size="15"></span><span>Place cart assets</span><span class="btn__arrow" aria-hidden="true">→</span>
+        </button>
+      </footer>
+    </dialog>
+
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
